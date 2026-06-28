@@ -81,3 +81,5 @@ jobs:
           COUNT=$(python -c "import sys; sys.path.insert(0,'scraper'); import db; print(db.count(db.connect()))")
           git commit -m "scrape: batch @${{ steps.off.outputs.offset }} -> total ${COUNT} listings" || echo "nothing to commit"
           git push
+
+# trigger workflow registration
