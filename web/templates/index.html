@@ -52,11 +52,6 @@
             {% endfor %}
           </ul>
         </div>
-        <div class="bg-gradient-to-br from-primary to-gradient rounded-lg p-5 text-white">
-          <h3 class="font-heading font-bold mb-1">Get a Free Quote</h3>
-          <p class="text-sm text-white/80 mb-3">Quotes from up to 3 local pros.</p>
-          <a href="#quote" class="block text-center bg-white text-primary font-semibold py-2 rounded-lg hover:bg-gray-100 text-sm">Request Quote</a>
-        </div>
       </aside>
 
       <!-- Listings -->
@@ -89,28 +84,4 @@
   </div>
 </section>
 
-<!-- Quote CTA -->
-<section id="quote" class="bg-white border-t py-16">
-  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="bg-gradient-to-br from-primary to-gradient rounded-2xl text-white p-8 md:p-10 grid md:grid-cols-2 gap-8 items-center">
-      <div>
-        <h2 class="text-2xl md:text-3xl font-heading font-bold">Get a Free Quote</h2>
-        <p class="mt-2 text-white/80">Get quotes from up to 3 professionals. Fast response times, no obligation.</p>
-      </div>
-      <form action="/quote" method="post" class="bg-white rounded-xl p-5 text-gray-900 grid gap-3">
-        <div class="grid sm:grid-cols-2 gap-3">
-          <input name="name" required placeholder="Your name" class="border rounded-lg px-3 py-2.5 outline-none focus:border-primary">
-          <input name="phone" required placeholder="Phone" class="border rounded-lg px-3 py-2.5 outline-none focus:border-primary">
-        </div>
-        <div class="grid sm:grid-cols-2 gap-3">
-          <select name="service" class="border rounded-lg px-3 py-2.5 outline-none focus:border-primary">
-            {% for c in ALL_CATEGORIES %}<option>{{ c }}</option>{% endfor %}
-          </select>
-          <input name="city" placeholder="Your city" class="border rounded-lg px-3 py-2.5 outline-none focus:border-primary">
-        </div>
-        <button class="bg-primary hover:opacity-90 text-white font-semibold py-3 rounded-lg">Request Quote</button>
-      </form>
-    </div>
-  </div>
-</section>
 {% endblock %}
