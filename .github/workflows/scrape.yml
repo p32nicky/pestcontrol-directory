@@ -42,7 +42,7 @@ jobs:
 
       - name: Install deps + Chromium
         run: |
-          pip install -r requirements.txt
+          pip install -r requirements-scrape.txt
           python -m playwright install --with-deps chromium
 
       - name: Resolve batch offset

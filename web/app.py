@@ -42,7 +42,10 @@ CATEGORY_ICONS = {
 # ---------------------------------------------------------------- db helpers
 def get_db():
     if "db" not in g:
-        g.db = sqlite3.connect(dbmod.DB_PATH)
+        # read-only + immutable: serverless filesystems are read-only, and this
+        # avoids SQLite creating -wal/-journal lock files next to the bundled DB.
+        uri = f"file:{dbmod.DB_PATH.as_posix()}?mode=ro&immutable=1"
+        g.db = sqlite3.connect(uri, uri=True)
         g.db.row_factory = sqlite3.Row
     return g.db
 
