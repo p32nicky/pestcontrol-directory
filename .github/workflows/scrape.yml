@@ -21,9 +21,9 @@ on:
   schedule:
     - cron: "0 */2 * * *"     # every 2 hours
 
-# never let two runs scrape at once (they'd fight over the DB)
+# never let two DB-writing runs overlap (scrape + content share this group)
 concurrency:
-  group: scrape
+  group: db-writer
   cancel-in-progress: false
 
 permissions:
@@ -80,6 +80,12 @@ jobs:
           git add -f data/pestcontrol.db data/.offset
           COUNT=$(python -c "import sys; sys.path.insert(0,'scraper'); import db; print(db.count(db.connect()))")
           git commit -m "scrape: batch @${{ steps.off.outputs.offset }} -> total ${COUNT} listings" || echo "nothing to commit"
-          git push
+          # resilient push: rebase + retry to survive concurrent commits
+          for i in 1 2 3 4 5; do
+            git push && break
+            echo "push rejected, rebasing (attempt $i)..."
+            git pull --rebase --autostash -X theirs origin master || true
+            sleep $((RANDOM % 5 + 2))
+          done
 
 # trigger workflow registration
