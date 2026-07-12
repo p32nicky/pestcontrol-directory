@@ -14,15 +14,7 @@ import os
 import re
 import sqlite3
 import sys
-import urllib.request
-import urllib.error
 from pathlib import Path
-
-
-class _NoRedirect(urllib.request.HTTPRedirectHandler):
-    """Don't auto-follow redirects (Apps Script 302 = success on POST)."""
-    def redirect_request(self, *a, **k):
-        return None
 
 from flask import (Flask, abort, g, redirect, render_template, request,
                    url_for, Response)
@@ -256,44 +248,6 @@ def search():
     sql += " ORDER BY reviews DESC LIMIT 200"
     rows = get_db().execute(sql, args).fetchall()
     return render_template("search.html", rows=rows, q=q, cat=cat, loc=loc)
-
-
-@app.route("/quote", methods=["POST"])
-def quote():
-    """Capture a lead. Vercel's FS is read-only, so we forward the lead to a
-    webhook (set LEAD_WEBHOOK to a Zapier/Make/Discord/Slack/Google-Sheet URL).
-    Always logs as a fallback so nothing is silently lost."""
-    from datetime import datetime, timezone
-    lead = {k: (request.form.get(k) or "").strip() for k in
-            ("name", "email", "phone", "city", "service", "details")}
-    lead["ts"] = datetime.now(timezone.utc).isoformat()
-    lead["ua"] = request.headers.get("User-Agent", "")[:200]
-    print("LEAD:", json.dumps(lead))  # shows in Vercel logs regardless
-
-    hook = os.environ.get("LEAD_WEBHOOK", "")
-    if hook:
-        try:
-            # Discord webhooks want {"content": ...}; generic hooks (Google
-            # Apps Script, Zapier, Make) accept the raw lead JSON.
-            if "discord.com" in hook:
-                body = {"content": (f"🐜 **New lead** — {lead['service']}\n"
-                                    f"{lead['name']} · {lead['phone']} · {lead['email']}\n"
-                                    f"{lead['city']} — {lead['details']}")}
-            else:
-                body = lead
-            req = urllib.request.Request(
-                hook, data=json.dumps(body).encode(),
-                headers={"Content-Type": "application/json"})
-            # Apps Script /exec answers 302 -> its content URL; the append runs
-            # on this POST, so don't follow (avoids urllib downgrading to GET).
-            opener = urllib.request.build_opener(_NoRedirect())
-            opener.open(req, timeout=8)
-        except urllib.error.HTTPError as e:
-            if e.code not in (301, 302, 303, 307, 308):
-                print("LEAD webhook HTTP error:", e.code)
-        except Exception as e:
-            print("LEAD webhook failed:", e)
-    return render_template("quote_thanks.html", lead=lead)
 
 
 # ---------------------------------------------------------------- SEO

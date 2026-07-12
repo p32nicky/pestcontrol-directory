@@ -59,7 +59,7 @@
       <div class="grid gap-2 mt-4">
         {% if l.phone %}<a href="tel:{{ l.phone }}" class="bg-primary hover:bg-primaryDark text-white text-center font-semibold py-2.5 rounded-xl"><i class="fas fa-phone mr-1"></i> Call now</a>{% endif %}
         {% if l.lat and l.lng %}<a href="https://maps.google.com/maps/dir/?api=1&destination={{ l.lat }},{{ l.lng }}" target="_blank" rel="noopener" class="border text-center font-semibold py-2.5 rounded-xl hover:border-primary hover:text-primary"><i class="fas fa-diamond-turn-right mr-1"></i> Directions</a>{% endif %}
-        <a href="/#quote" class="border text-center font-semibold py-2.5 rounded-xl hover:border-primary hover:text-primary"><i class="fas fa-clipboard-list mr-1"></i> Get free quotes</a>
+        {% if l.website %}<a href="{{ l.website }}" target="_blank" rel="nofollow noopener" class="border text-center font-semibold py-2.5 rounded-xl hover:border-primary hover:text-primary"><i class="fas fa-globe mr-1"></i> Visit website</a>{% endif %}
       </div>
     </div>
   </aside>
