@@ -35,10 +35,11 @@ jobs:
 
       - name: Generate copy
         env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
-          if [ -z "$GEMINI_API_KEY" ]; then
-            echo "No GEMINI_API_KEY secret set — skipping."; exit 0
+          if [ -z "$GROQ_API_KEY" ] && [ -z "$GEMINI_API_KEY" ]; then
+            echo "No GROQ_API_KEY / GEMINI_API_KEY secret set — skipping."; exit 0
           fi
           KIND="${{ github.event.inputs.kind }}"; KIND=${KIND:-city}
           LIMIT="${{ github.event.inputs.limit }}"; LIMIT=${LIMIT:-60}

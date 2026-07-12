@@ -1,16 +1,17 @@
-"""Generate unique SEO copy with Gemini, cached in the `content` table.
+"""Generate unique SEO copy with an LLM, cached in the `content` table.
 
 Run ONCE per page (cached forever). Avoids thin/duplicate content across the
 thousands of city/category pages — the thing that makes or breaks a directory
 in Google.
 
+Provider: Groq (fast, generous free tier) by default; falls back to Gemini.
 Setup:
-    set GEMINI_API_KEY=your_key      (Windows)   /   export on mac+linux
+    set GROQ_API_KEY=your_key         (Windows)   /   export on mac+linux
     python web/gen_content.py --kind category          # all categories
     python web/gen_content.py --kind city --limit 50   # first 50 cities
     python web/gen_content.py --kind city --only austin-tx
 
-Never commits the key. Uses gemini-2.0-flash (fast, generous free tier).
+Never commits the key.
 """
 import argparse
 import json
@@ -25,36 +26,68 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scraper"))
 import db as dbmod  # noqa: E402
 
-MODEL = os.environ.get("GEMINI_MODEL", "gemini-flash-latest")
-API_KEY = os.environ.get("GEMINI_API_KEY", "")
-ENDPOINT = (f"https://generativelanguage.googleapis.com/v1beta/models/"
-            f"{MODEL}:generateContent")
+GROQ_KEY = os.environ.get("GROQ_API_KEY", "")
+GROQ_MODEL = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
+GEMINI_KEY = os.environ.get("GEMINI_API_KEY", "")
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-flash-latest")
 
 SYS = ("You write concise, genuinely useful, non-spammy copy for a pest-control "
        "directory website. Plain, trustworthy tone. No emojis, no hype, no made-up "
        "statistics or fake guarantees. Return ONLY valid minified JSON.")
 
 
-def gemini(prompt: str) -> dict:
-    body = {
-        "system_instruction": {"parts": [{"text": SYS}]},
-        "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {"temperature": 0.7, "response_mime_type": "application/json"},
-    }
-    req = urllib.request.Request(
-        f"{ENDPOINT}?key={API_KEY}",
-        data=json.dumps(body).encode(),
-        headers={"Content-Type": "application/json"},
-    )
-    with urllib.request.urlopen(req, timeout=60) as r:
-        data = json.loads(r.read())
-    text = data["candidates"][0]["content"]["parts"][0]["text"]
+def _extract_json(text: str) -> dict:
     try:
         return json.loads(text)
     except json.JSONDecodeError:
-        # model sometimes appends stray text — grab the first JSON object
+        # model sometimes wraps/append stray text — grab the first JSON object
         obj, _ = json.JSONDecoder().raw_decode(text[text.index("{"):])
         return obj
+
+
+def _groq(prompt: str) -> dict:
+    body = {
+        "model": GROQ_MODEL,
+        "messages": [{"role": "system", "content": SYS},
+                     {"role": "user", "content": prompt}],
+        "temperature": 0.7,
+        "response_format": {"type": "json_object"},
+    }
+    req = urllib.request.Request(
+        "https://api.groq.com/openai/v1/chat/completions",
+        data=json.dumps(body).encode(),
+        headers={"Content-Type": "application/json",
+                 "Authorization": f"Bearer {GROQ_KEY}"},
+    )
+    with urllib.request.urlopen(req, timeout=60) as r:
+        data = json.loads(r.read())
+    return _extract_json(data["choices"][0]["message"]["content"])
+
+
+def _gemini(prompt: str) -> dict:
+    endpoint = (f"https://generativelanguage.googleapis.com/v1beta/models/"
+                f"{GEMINI_MODEL}:generateContent?key={GEMINI_KEY}")
+    body = {
+        "system_instruction": {"parts": [{"text": SYS}]},
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {"temperature": 0.7,
+                             "response_mime_type": "application/json"},
+    }
+    req = urllib.request.Request(
+        endpoint, data=json.dumps(body).encode(),
+        headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=60) as r:
+        data = json.loads(r.read())
+    return _extract_json(data["candidates"][0]["content"]["parts"][0]["text"])
+
+
+def gemini(prompt: str) -> dict:
+    """Provider-agnostic generate: Groq first, else Gemini."""
+    if GROQ_KEY:
+        return _groq(prompt)
+    if GEMINI_KEY:
+        return _gemini(prompt)
+    raise RuntimeError("No GROQ_API_KEY or GEMINI_API_KEY set")
 
 
 def prompt_category(name, n):
@@ -85,9 +118,10 @@ def already(conn, key):
 
 
 def run(kind, limit, only, force):
-    if not API_KEY:
-        print("ERROR: set GEMINI_API_KEY env var first.")
+    if not (GROQ_KEY or GEMINI_KEY):
+        print("ERROR: set GROQ_API_KEY (or GEMINI_API_KEY) env var first.")
         sys.exit(2)
+    print(f"provider: {'Groq/'+GROQ_MODEL if GROQ_KEY else 'Gemini/'+GEMINI_MODEL}")
     conn = dbmod.connect()
     done = 0
 
