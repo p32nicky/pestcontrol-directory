@@ -69,6 +69,9 @@ jobs:
             --limit "$BATCH" \
             --max-results "$MAXR"
 
+      - name: Clean (junk, ghosts, duplicates)
+        run: python scraper/clean.py
+
       - name: Advance offset + commit data
         run: |
           BATCH="${{ github.event.inputs.batch }}"; BATCH=${BATCH:-120}

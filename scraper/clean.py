@@ -16,9 +16,26 @@ def main():
     ghosts = conn.execute(
         "DELETE FROM listings WHERE (phone IS NULL OR phone='') "
         "AND (website IS NULL OR website='')").rowcount
+
+    # de-dupe same business (name+city+state); keep the richest record
+    # (most reviews, then has website/phone, then lowest id)
+    dupes = conn.execute("""
+        SELECT id FROM listings WHERE id NOT IN (
+          SELECT id FROM (
+            SELECT id, ROW_NUMBER() OVER (
+              PARTITION BY lower(name), city, state
+              ORDER BY COALESCE(reviews,0) DESC,
+                       (website IS NOT NULL) DESC,
+                       (phone IS NOT NULL) DESC, id ASC) rn
+            FROM listings
+          ) WHERE rn = 1
+        )""").fetchall()
+    if dupes:
+        conn.executemany("DELETE FROM listings WHERE id=?",
+                         [(r[0],) for r in dupes])
     conn.commit()
-    print(f"Removed {len(junk)} chains + {ghosts} no-contact rows. "
-          f"{before} -> {db.count(conn)}")
+    print(f"Removed {len(junk)} chains + {ghosts} no-contact + {len(dupes)} "
+          f"duplicates. {before} -> {db.count(conn)}")
 
 
 if __name__ == "__main__":

@@ -83,6 +83,14 @@ def upsert(conn, row: dict) -> bool:
         if cur.fetchone():
             return False
 
+    # dedup on name+city+state (catches dupes with missing/different CIDs,
+    # e.g. the same business returned under two category searches)
+    cur.execute("SELECT 1 FROM listings WHERE lower(name)=lower(?) "
+                "AND city=? AND state=?",
+                (row.get("name"), row.get("city"), row.get("state")))
+    if cur.fetchone():
+        return False
+
     # ensure unique slug
     while True:
         cur.execute("SELECT 1 FROM listings WHERE slug = ?", (slug,))
