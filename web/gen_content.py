@@ -57,7 +57,8 @@ def _groq(prompt: str) -> dict:
         "https://api.groq.com/openai/v1/chat/completions",
         data=json.dumps(body).encode(),
         headers={"Content-Type": "application/json",
-                 "Authorization": f"Bearer {GROQ_KEY}"},
+                 "Authorization": f"Bearer {GROQ_KEY}",
+                 "User-Agent": "pestcontrol-directory/1.0"},
     )
     with urllib.request.urlopen(req, timeout=60) as r:
         data = json.loads(r.read())
@@ -82,12 +83,20 @@ def _gemini(prompt: str) -> dict:
 
 
 def gemini(prompt: str) -> dict:
-    """Provider-agnostic generate: Groq first, else Gemini."""
-    if GROQ_KEY:
-        return _groq(prompt)
-    if GEMINI_KEY:
-        return _gemini(prompt)
-    raise RuntimeError("No GROQ_API_KEY or GEMINI_API_KEY set")
+    """Provider-agnostic generate with 429 backoff: Groq first, else Gemini."""
+    fn = _groq if GROQ_KEY else _gemini
+    if not (GROQ_KEY or GEMINI_KEY):
+        raise RuntimeError("No GROQ_API_KEY or GEMINI_API_KEY set")
+    for attempt in range(5):
+        try:
+            return fn(prompt)
+        except urllib.error.HTTPError as e:
+            if e.code == 429 and attempt < 4:
+                wait = int(e.headers.get("retry-after", 0)) or (10 * (attempt + 1))
+                print(f"    429 rate limit — waiting {wait}s")
+                time.sleep(wait)
+                continue
+            raise
 
 
 def prompt_category(name, n):
