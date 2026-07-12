@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% from "_macros.html" import card, stars %}
 {% block title %}{{ l.name }} — {{ l.city }}, {{ l.state }} | {{ SITE_NAME }}{% endblock %}
-{% block description %}{{ l.name }} in {{ l.city }}, {{ l.state }}{% if l.rating %} — rated {{ "%.1f"|format(l.rating) }}/5 from {{ l.reviews }} reviews{% endif %}. {{ l.category }}. Get a free quote.{% endblock %}
+{% block description %}{{ l.name }} in {{ l.city }}, {{ l.state }}{% if l.rating %} — rated {{ "%.1f"|format(l.rating) }}/5 from {{ l.reviews }} reviews{% endif %}. {{ l.category }}. Read reviews and contact them directly.{% endblock %}
 {% block canonical %}/listing/{{ l.slug }}{% endblock %}
 
 {% block content %}
@@ -26,7 +26,7 @@
     {% if copy and copy.intro %}
     <section class="prose max-w-none"><p class="text-gray-700 leading-relaxed">{{ copy.intro }}</p></section>
     {% else %}
-    <p class="text-gray-700 leading-relaxed">{{ l.name }} provides {{ l.category|lower }} services in {{ l.city }}, {{ l.state }}. Contact them for a free quote, or request quotes from up to 3 local pros below.</p>
+    <p class="text-gray-700 leading-relaxed">{{ l.name }} provides {{ l.category|lower }} services in {{ l.city }}, {{ l.state }}. Contact them directly to book service.</p>
     {% endif %}
 
     {% if copy and copy.faq %}

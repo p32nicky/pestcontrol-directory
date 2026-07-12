@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% from "_macros.html" import card, pager %}
 {% block title %}Pest Control in {{ city }}, {{ state }} ({{ total }} pros){% if pg.page>1 %} — Page {{ pg.page }}{% endif %} | {{ SITE_NAME }}{% endblock %}
-{% block description %}Compare {{ total }} top-rated pest control & exterminator services in {{ city }}, {{ state }}. Reviews, phone numbers, free quotes.{% endblock %}
+{% block description %}Compare {{ total }} top-rated pest control & exterminator services in {{ city }}, {{ state }}. Reviews, phone numbers, and direct contact.{% endblock %}
 {% block canonical %}/{{ state|lower }}/{{ cat_slug(city) }}{% endblock %}
 {% block head_extra %}
   {% if pg.has_prev %}<link rel="prev" href="{{ DOMAIN }}{{ base_url }}{% if pg.page>2 %}?page={{ pg.page-1 }}{% endif %}">{% endif %}
