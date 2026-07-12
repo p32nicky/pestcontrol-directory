@@ -36,7 +36,7 @@
         <!-- Location -->
         <p class="text-sm text-gray-600 flex items-center mb-2">
           <i class="fas fa-map-marker-alt mr-1 text-primary"></i>
-          <a href="/{{ l.state|lower }}/{{ l.city|lower|replace(' ','-') }}" class="hover:text-primary hover:underline">{{ l.city }}, {{ l.state }}</a>
+          <a href="/{{ l.state|lower }}/{{ l.city|slugify }}" class="hover:text-primary hover:underline">{{ l.city }}, {{ l.state }}</a>
         </p>
         <!-- Description -->
         <p class="text-gray-600 text-sm mb-4 line-clamp-2">

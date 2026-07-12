@@ -77,6 +77,10 @@ def slugify(s):
     return dbmod.slugify(s or "")
 
 
+# make slugify usable inside macros (which don't inherit context processors)
+app.jinja_env.filters["slugify"] = slugify
+
+
 def content_for(key):
     """Fetch cached Gemini copy, or None. {intro, faq:[{q,a}]}."""
     row = get_db().execute(
