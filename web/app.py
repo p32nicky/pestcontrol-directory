@@ -187,9 +187,18 @@ def category(slug):
         "SELECT * FROM listings WHERE category = ? ORDER BY reviews DESC "
         "LIMIT ? OFFSET ?", (name, PER_PAGE, (page - 1) * PER_PAGE)).fetchall()
     copy = content_for(f"category:{slug}")
+    stats = d.execute(
+        "SELECT ROUND(AVG(rating),1) avg, COUNT(DISTINCT city||state) cities, "
+        "SUM(reviews) revs FROM listings WHERE category = ? AND rating IS NOT NULL",
+        (name,)).fetchone()
+    top_cities = d.execute(
+        "SELECT city, state, COUNT(*) n FROM listings WHERE category = ? "
+        "GROUP BY city, state ORDER BY n DESC LIMIT 5", (name,)).fetchall()
+    facts = {"avg": stats["avg"], "cities": stats["cities"],
+             "reviews": stats["revs"] or 0, "top_cities": top_cities}
     return render_template("category.html", name=name, slug=slug, rows=rows,
                            total=total, copy=copy, pg=_pageinfo(page, total),
-                           base_url=f"/category/{slug}")
+                           facts=facts, base_url=f"/category/{slug}")
 
 
 @app.route("/<state>/<cityslug>")
@@ -208,9 +217,18 @@ def city(state, cityslug):
     total = len(rows)
     paged = rows[(page - 1) * PER_PAGE: page * PER_PAGE]
     copy = content_for(f"city:{cityslug}-{state.lower()}")
+    rated = [r["rating"] for r in rows if r["rating"] is not None]
+    svc = {}
+    for r in rows:
+        if r["category"]:
+            svc[r["category"]] = svc.get(r["category"], 0) + 1
+    facts = {"avg": round(sum(rated) / len(rated), 1) if rated else None,
+             "reviews": sum(r["reviews"] or 0 for r in rows),
+             "top": rows[0],
+             "services": sorted(svc.items(), key=lambda x: -x[1])}
     return render_template("city.html", city=cname, state=state, rows=paged,
                            total=total, copy=copy, pg=_pageinfo(page, total),
-                           base_url=f"/{state.lower()}/{cityslug}")
+                           facts=facts, base_url=f"/{state.lower()}/{cityslug}")
 
 
 @app.route("/cities")

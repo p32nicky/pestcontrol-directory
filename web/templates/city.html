@@ -17,7 +17,34 @@
   </div>
 </div>
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-  {% if copy and copy.intro and pg.page==1 %}<p class="text-gray-700 leading-relaxed max-w-3xl mb-8">{{ copy.intro }}</p>{% endif %}
+  {% if pg.page==1 %}
+  <div class="grid lg:grid-cols-3 gap-8 mb-10">
+    <div class="lg:col-span-2">
+      {% if copy and copy.intro %}<p class="text-gray-700 leading-relaxed">{{ copy.intro }}</p>{% endif %}
+    </div>
+    <aside>
+      <div class="bg-white rounded-xl border border-gray-200 p-5">
+        <h2 class="font-heading font-bold text-secondary mb-4">Quick facts</h2>
+        <dl class="space-y-2.5 text-sm">
+          <div class="flex justify-between"><dt class="text-gray-500">Providers</dt><dd class="font-semibold">{{ total }}</dd></div>
+          {% if facts.avg %}<div class="flex justify-between"><dt class="text-gray-500">Avg rating</dt><dd class="font-semibold"><i class="fas fa-star text-amber-400"></i> {{ facts.avg }}</dd></div>{% endif %}
+          <div class="flex justify-between"><dt class="text-gray-500">Total reviews</dt><dd class="font-semibold">{{ "{:,}".format(facts.reviews) }}</dd></div>
+        </dl>
+        {% if facts.top %}
+        <h3 class="font-semibold text-sm mt-5 mb-2 text-gray-700">Top-rated pick</h3>
+        <a href="/listing/{{ facts.top.slug }}" class="block text-primary hover:underline text-sm">{{ facts.top.name }}</a>
+        {% if facts.top.rating %}<div class="text-xs text-gray-400 mt-0.5"><i class="fas fa-star text-amber-400"></i> {{ facts.top.rating }} ({{ facts.top.reviews }} reviews)</div>{% endif %}
+        {% endif %}
+        {% if facts.services %}
+        <h3 class="font-semibold text-sm mt-5 mb-2 text-gray-700">Services here</h3>
+        <ul class="flex flex-wrap gap-1.5">
+          {% for cat, n in facts.services %}<li><a href="/category/{{ cat_slug(cat) }}" class="inline-block text-xs px-2 py-1 rounded-md bg-gray-100 text-gray-600 hover:text-primary">{{ cat }} ({{ n }})</a></li>{% endfor %}
+        </ul>
+        {% endif %}
+      </div>
+    </aside>
+  </div>
+  {% endif %}
   <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">{% for l in rows %}{{ card(l) }}{% endfor %}</div>
   {{ pager(pg, base_url) }}
   {% if copy and copy.faq and pg.page==1 %}
