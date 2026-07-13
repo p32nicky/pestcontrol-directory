@@ -11,7 +11,7 @@
 {% block content %}
 <div class="bg-gradient-to-br from-primary to-gradient text-white">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-    <nav class="text-sm text-white/70 mb-3"><a href="/" class="hover:text-white">Home</a> / <a href="/cities" class="hover:text-white">Cities</a> / <span class="text-white">{{ city }}, {{ state }}</span></nav>
+    <nav class="text-sm text-white/70 mb-3"><a href="/" class="hover:text-white">Home</a> / <a href="/state/{{ state|lower }}" class="hover:text-white">{{ STATE_NAMES.get(state, state) }}</a> / <span class="text-white">{{ city }}, {{ state }}</span></nav>
     <h1 class="text-3xl md:text-4xl font-extrabold">Pest Control in {{ city }}, {{ state }}</h1>
     <p class="mt-2 text-white/90">{{ total }} trusted local pros &middot; verified reviews &middot; call direct</p>
   </div>
@@ -55,7 +55,7 @@
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[
 {"@type":"ListItem","position":1,"name":"Home","item":"{{ DOMAIN }}/"},
-{"@type":"ListItem","position":2,"name":"Cities","item":"{{ DOMAIN }}/cities"},
+{"@type":"ListItem","position":2,"name":{{ STATE_NAMES.get(state, state)|tojson }},"item":"{{ DOMAIN }}/state/{{ state|lower }}"},
 {"@type":"ListItem","position":3,"name":{{ (city~", "~state)|tojson }},"item":"{{ DOMAIN }}/{{ state|lower }}/{{ cat_slug(city) }}"}]}
 </script>
 {% if copy and copy.faq %}

@@ -34,6 +34,22 @@ app.config["GA_ID"] = os.environ.get("GA_ID", "")                    # G-XXXXXXX
 # Google Search Console verification token (the string in the meta-tag method).
 app.config["GSC_VERIFICATION"] = os.environ.get("GSC_VERIFICATION", "")
 
+STATE_NAMES = {
+    "AL": "Alabama", "AK": "Alaska", "AZ": "Arizona", "AR": "Arkansas",
+    "CA": "California", "CO": "Colorado", "CT": "Connecticut", "DE": "Delaware",
+    "DC": "District of Columbia", "FL": "Florida", "GA": "Georgia", "HI": "Hawaii",
+    "ID": "Idaho", "IL": "Illinois", "IN": "Indiana", "IA": "Iowa", "KS": "Kansas",
+    "KY": "Kentucky", "LA": "Louisiana", "ME": "Maine", "MD": "Maryland",
+    "MA": "Massachusetts", "MI": "Michigan", "MN": "Minnesota", "MS": "Mississippi",
+    "MO": "Missouri", "MT": "Montana", "NE": "Nebraska", "NV": "Nevada",
+    "NH": "New Hampshire", "NJ": "New Jersey", "NM": "New Mexico", "NY": "New York",
+    "NC": "North Carolina", "ND": "North Dakota", "OH": "Ohio", "OK": "Oklahoma",
+    "OR": "Oregon", "PA": "Pennsylvania", "RI": "Rhode Island", "SC": "South Carolina",
+    "SD": "South Dakota", "TN": "Tennessee", "TX": "Texas", "UT": "Utah",
+    "VT": "Vermont", "VA": "Virginia", "WA": "Washington", "WV": "West Virginia",
+    "WI": "Wisconsin", "WY": "Wyoming",
+}
+
 CATEGORY_ICONS = {
     "General Pest Control": "fa-bug",
     "Exterminators": "fa-spray-can-sparkles",
@@ -118,6 +134,7 @@ def inject_globals():
         "GA_ID": app.config["GA_ID"],
         "DOMAIN": app.config["DOMAIN"],
         "GSC_VERIFICATION": app.config["GSC_VERIFICATION"],
+        "STATE_NAMES": STATE_NAMES,
         "cat_slug": slugify,
     }
 
@@ -231,11 +248,32 @@ def city(state, cityslug):
                            facts=facts, base_url=f"/{state.lower()}/{cityslug}")
 
 
+@app.route("/state/<st>")
+def state(st):
+    st = st.upper()
+    if st not in STATE_NAMES:
+        abort(404)
+    d = get_db()
+    cities_ = d.execute(
+        "SELECT city, COUNT(*) n FROM listings WHERE state = ? "
+        "GROUP BY city ORDER BY n DESC", (st,)).fetchall()
+    if not cities_:
+        abort(404)
+    total = d.execute("SELECT COUNT(*) FROM listings WHERE state = ?",
+                      (st,)).fetchone()[0]
+    top = d.execute(
+        "SELECT * FROM listings WHERE state = ? ORDER BY reviews DESC LIMIT 12",
+        (st,)).fetchall()
+    return render_template("state.html", st=st, name=STATE_NAMES[st],
+                           cities=cities_, total=total, top=top)
+
+
 @app.route("/cities")
 def cities():
+    # group by state -> lighter page + links to state hubs
     rows = get_db().execute(
-        "SELECT city, state, COUNT(*) n FROM listings "
-        "GROUP BY city, state ORDER BY state, city").fetchall()
+        "SELECT state, COUNT(DISTINCT city) c, COUNT(*) n FROM listings "
+        "GROUP BY state ORDER BY n DESC").fetchall()
     return render_template("cities.html", rows=rows)
 
 
@@ -293,6 +331,8 @@ def sitemap():
     for r in d.execute("SELECT DISTINCT category FROM listings "
                        "WHERE category IS NOT NULL"):
         urls.append((f"{base}/category/{slugify(r['category'])}", "0.8", "weekly"))
+    for r in d.execute("SELECT DISTINCT state FROM listings"):
+        urls.append((f"{base}/state/{r['state'].lower()}", "0.7", "weekly"))
     for r in d.execute("SELECT DISTINCT city, state FROM listings"):
         urls.append((f"{base}/{r['state'].lower()}/{slugify(r['city'])}",
                      "0.7", "weekly"))
